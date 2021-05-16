@@ -95,7 +95,7 @@ public class Test1 {
 			for (Statement s : statements) {
 				s.eval(global, blockCtx);
 			}
-			return new Value(0);
+			return new IntegerValue(0);
 		}
 	}
 	
@@ -183,7 +183,7 @@ public class Test1 {
 			
 			init.eval(global, blockCtx);
 			
-			while (condition.eval(global, blockCtx).value == 1) {
+			while (((IntegerValue) condition.eval(global, blockCtx)).value == 1) {
 				whileBlock.evalInContext(global, blockCtx);
 				
 				increment.eval(global, blockCtx);
@@ -221,7 +221,7 @@ public class Test1 {
 		}
 
 		public void eval(Context global, Context ctx) {
-			if (expression.eval(global, ctx).value == 1) {
+			if (((IntegerValue) expression.eval(global, ctx)).value == 1) {
 				thenBlock.eval(global, ctx);
 			}
 			else if (elseBlock != null) {
@@ -408,9 +408,10 @@ public class Test1 {
 	}
 	
 	static class Factor {
-		public Number number;         //XOR
-		public Expression expression; //XOR
-		public Variable variable;	  //XOR
+		public Number number;               //XOR
+		public StringLiteral stringLiteral; //XOR
+		public Expression expression; 		//XOR
+		public Variable variable;	  		//XOR
 
 		public static Factor parse(Tokenizer t) {
 			Factor factor = new Factor();
@@ -421,6 +422,9 @@ public class Test1 {
 				factor.expression = Expression.parse(t);
 				
 				if (!")".equals(t.next())) throw new RuntimeException(") expected");
+			}
+			else if (token.startsWith("'")) {
+				factor.stringLiteral = StringLiteral.parse(token); //FIXME (Tokenizer) string with spaces and "'" escaping
 			}
 			else {
 				try {
@@ -437,6 +441,9 @@ public class Test1 {
 		public Value eval(Context global, Context ctx) {
 			if (number != null) {
 				return number.eval(global, ctx);
+			}
+			else if (stringLiteral != null) {
+				return stringLiteral.eval(global, ctx);
 			}
 			else if (expression != null) {
 				return expression.eval(global, ctx);
@@ -458,8 +465,23 @@ public class Test1 {
 			return number;
 		}
 		
-		public Value eval(Context global, Context ctx) {
-			return new Value(value);
+		public IntegerValue eval(Context global, Context ctx) {
+			return new IntegerValue(value);
+		}
+	}
+	
+	static class StringLiteral {
+		public String value;
+
+		public static StringLiteral parse(String token) {
+			StringLiteral s = new StringLiteral();
+			s.value = token.substring(1, token.length() - 1);
+			
+			return s;
+		}
+		
+		public StringValue eval(Context global, Context ctx) {
+			return new StringValue(value);
 		}
 	}
 	
@@ -484,48 +506,88 @@ public class Test1 {
 	}
 	
 	static class Value {
+		public Value add(Value v) {
+			throw new RuntimeException(getClass().getName() + ".add not implemented");
+		}
+		public Value sub(Value v) {
+			throw new RuntimeException(getClass().getName() + ".sub not implemented");
+		}
+		public Value or(Value v) {
+			throw new RuntimeException(getClass().getName() + ".or not implemented");
+		}
+		public Value div(Value v) {
+			throw new RuntimeException(getClass().getName() + ".div not implemented");
+		}
+		public Value mul(Value v) {
+			throw new RuntimeException(getClass().getName() + ".mul not implemented");
+		}
+		public Value and(Value v) {
+			throw new RuntimeException(getClass().getName() + ".and not implemented");
+		}
+		public Value eq(Value v) {
+			throw new RuntimeException(getClass().getName() + ".eq not implemented");
+		}
+		public Value lt(Value v) {
+			throw new RuntimeException(getClass().getName() + ".lt not implemented");
+		}
+		public Value gt(Value v) {
+			throw new RuntimeException(getClass().getName() + ".gt not implemented");
+		}
+		public String toString() {
+			throw new RuntimeException(getClass().getName() + ".toString not implemented");
+		}
+	}
+	
+	static class IntegerValue extends Value {
 		public int value;
-		public Value(int v) {
+		public IntegerValue(int v) {
 			this.value = v;
 		}
 		public Value add(Value v) {
-			System.out.println(this.value + "+" +  v.value + "=" + (this.value + v.value)); //DEBUG
-			return new Value(this.value + v.value);
+			return new IntegerValue(this.value + ((IntegerValue) v).value);
 		}
 		public Value sub(Value v) {
-			System.out.println(this.value + "-" +  v.value + "=" + (this.value - v.value)); //DEBUG
-			return new Value(this.value - v.value);
+			return new IntegerValue(this.value - ((IntegerValue) v).value);
 		}
 		public Value or(Value v) {
-			System.out.println(this.value + "|" +  v.value + "=" + (this.value == 1 || v.value == 1 ? 1 : 0)); //DEBUG
-			return new Value(this.value == 1 || v.value == 1 ? 1 : 0);
+			return new IntegerValue(this.value == 1 || ((IntegerValue) v).value == 1 ? 1 : 0);
 		}
 		public Value div(Value v) {
-			System.out.println(this.value + "/" +  v.value + "=" + (this.value / v.value)); //DEBUG
-			return new Value(this.value / v.value);
+			return new IntegerValue(this.value / ((IntegerValue) v).value);
 		}
 		public Value mul(Value v) {
-			System.out.println(this.value + "*" +  v.value + "=" + (this.value * v.value)); //DEBUG
-			return new Value(this.value * v.value);
+			return new IntegerValue(this.value * ((IntegerValue) v).value);
 		}
 		public Value and(Value v) {
-			System.out.println(this.value + "&" +  v.value + "=" + (this.value == 1 && v.value == 1 ? 1 : 0)); //DEBUG
-			return new Value(this.value == 1 && v.value == 1 ? 1 : 0);
+			return new IntegerValue(this.value == 1 && ((IntegerValue) v).value == 1 ? 1 : 0);
 		}
 		public Value eq(Value v) {
-			System.out.println(this.value + "=" +  v.value + "=" + (this.value == v.value ? 1 : 0)); //DEBUG
-			return new Value(this.value == v.value ? 1 : 0);
+			return new IntegerValue(this.value == ((IntegerValue) v).value ? 1 : 0);
 		}
 		public Value lt(Value v) {
-			System.out.println(this.value + "<" +  v.value + "=" + (this.value < v.value ? 1 : 0)); //DEBUG
-			return new Value(this.value < v.value ? 1 : 0);
+			return new IntegerValue(this.value < ((IntegerValue) v).value ? 1 : 0);
 		}
 		public Value gt(Value v) {
-			System.out.println(this.value + ">" +  v.value + "=" + (this.value > v.value ? 1 : 0)); //DEBUG
-			return new Value(this.value > v.value ? 1 : 0);
+			return new IntegerValue(this.value > ((IntegerValue) v).value ? 1 : 0);
 		}
 		public String toString() {
 			return "" + value;
+		}
+	}
+	
+	static class StringValue extends Value {
+		public String value;
+		public StringValue(String v) {
+			this.value = v;
+		}
+		public Value add(Value v) {
+			return new StringValue(this.value + ((StringValue) v).value);
+		}
+		public Value eq(Value v) {
+			return new IntegerValue(this.value.equals(((StringValue) v).value) ? 1 : 0);
+		}
+		public String toString() {
+			return value;
 		}
 	}
 	
@@ -533,16 +595,22 @@ public class Test1 {
 	
 	@Test
 	public void test() {
+		assertEquals("ab", eval("{ C := 'a' + 'b' }").get("C").toString());
+		
 		assertEquals("5", eval("{ C := x ; for i := 0 ; i < 3 ; i := i + 1 { C := C + 1 } }", "x", 2).get("C").toString());
 		
 		assertEquals("-6", eval("{ if x > 1 then { C := 2 * x } else { b := 3 * x ; C := b } }", "x", -2).get("C").toString());
 		assertEquals("4",  eval("{ if x > 1 then { C := 2 * x } else { b := 3 * x ; C := b } }", "x",  2).get("C").toString());
 	}
 	
+	private Context eval(String s) {
+		return eval(s, "foo", 0);
+	}
+	
 	private Context eval(String s, String name, int value) {
 		Context global = new Context();
 		Context ctx = new Context();
-		ctx.put(name, new Value(value));
+		ctx.put(name, new IntegerValue(value));
 		return eval(s, global, ctx);
 	}
 	
