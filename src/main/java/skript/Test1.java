@@ -45,6 +45,115 @@ public class Test1 {
 		}
 	}
 	
+	static class Block {
+		public List<Statement> statements = new LinkedList<Statement>();
+		
+		public static Block parse(Tokenizer t) {
+			Block block = new Block();
+			
+			if (!"{".equals(t.next())) throw new RuntimeException("{ expected");
+			
+			for (;;) {
+				String token = t.next();
+				
+				if ("}".equals(token)) break;
+				
+				t.pushback(token);
+				block.statements.add(Statement.parse(t));
+			
+				token = t.next();
+				if ("}".equals(token)) break;
+				if (!";".equals(token)) throw new RuntimeException("; expected, got: " + token);
+			}
+			
+			return block;
+		}
+		
+		public Value eval(Map<String,Value> ctx) {
+			for (Statement s : statements) {
+				s.eval(ctx);
+			}
+			return new Value(0);
+		}
+	}
+	
+	static abstract class Statement {
+		public static Statement parse(Tokenizer t) {
+			String token = t.next();
+			t.pushback(token);
+			
+			if ("if".equals(token)) {
+				return IfStatement.parse(t);
+			}
+			else {
+				return AssignmentStatement.parse(t);
+			}
+		}
+		
+		public abstract void eval(Map<String, Value> ctx);
+	}
+	
+	static class AssignmentStatement extends Statement {
+		public String variable;
+		public Expression expression;
+		
+		public static AssignmentStatement parse(Tokenizer t) {
+			AssignmentStatement as = new AssignmentStatement();
+			
+			as.variable = t.next();
+			
+			String token = t.next();
+			if (!":=".equals(token)) throw new RuntimeException(":= expected, got: " + token);
+			
+			as.expression = Expression.parse(t);
+			
+			return as;
+		}
+		
+		public void eval(Map<String, Value> ctx) {
+			ctx.put(variable, expression.eval(ctx));
+		}		
+	}
+	
+	static class IfStatement extends Statement {
+		public Expression expression;
+		public Block thenBlock;
+		public Block elseBlock;
+		
+		public static IfStatement parse(Tokenizer t) {
+			IfStatement is = new IfStatement();
+			
+			String token = t.next();
+			if (!"if".equals(token)) throw new RuntimeException("if expected, got: " + token);
+			
+			is.expression = Expression.parse(t);
+			
+			token = t.next();
+			if (!"then".equals(token)) throw new RuntimeException("then expected, got: " + token);
+			
+			is.thenBlock = Block.parse(t);
+			
+			token = t.next();
+			if ("else".equals(token)) {
+				is.elseBlock = Block.parse(t);
+			}
+			else {
+				t.pushback(token);
+			}
+			
+			return is;
+		}
+
+		public void eval(Map<String, Value> ctx) {
+			if (expression.eval(ctx).value == 1) {
+				thenBlock.eval(ctx);
+			}
+			else if (elseBlock != null) {
+				elseBlock.eval(ctx);
+			}
+		}
+	}
+	
 	static class Expression {
 		public List<RelationalOperatorSimpleExpression> relationalOperatorSimpleExpressions = new LinkedList<RelationalOperatorSimpleExpression>();
 
@@ -332,7 +441,7 @@ public class Test1 {
 		}
 		public Value gt(Value v) {
 			System.out.println(this.value + ">" +  v.value + "=" + (this.value > v.value ? 1 : 0)); //DEBUG
-			return new Value(this.value < v.value ? 1 : 0);
+			return new Value(this.value > v.value ? 1 : 0);
 		}
 		public String toString() {
 			return "" + value;
@@ -342,27 +451,23 @@ public class Test1 {
 	////
 	
 	public static void main(String[] args) {
-		eval("( ( 0 - 2 ) * ( 3 + 4 ) < 0 - 20 / 2 ) & x", "x", 1);
+//		eval("{ a := ( 0 - 2 ) * ( 3 + 4 ) ; y := ( a < 0 - 20 / 2 ) & x ; z := y + x ; }", "x", 1);
+		eval("{ if x > 1 then { a := 2 * x } else { b := 3 * x } }", "x", -2);
 	}
 	
-//	private static Value eval(String s) {
-//		return eval(s, null);
-//	}
-	
-	private static Value eval(String s, String name, int value) {
+	private static void eval(String s, String name, int value) {
 		Map<String, Value> vars = new HashMap<String, Value>();
 		vars.put(name, new Value(value));
-		return eval(s, vars);
+		eval(s, vars);
 	}
 	
-	private static Value eval(String s, Map<String, Value> vars) {
+	private static void eval(String s, Map<String, Value> vars) {
 		System.out.println(s);
 		Map<String, Value> ctx = new HashMap<String, Value>();
 		if (vars != null) {
 			ctx.putAll(vars);
 		}
-		Value result = Expression.parse(new Tokenizer(s)).eval(ctx);
-		System.out.println(result);
-		return result;
+		Block.parse(new Tokenizer(s)).eval(ctx);
+		System.out.println(ctx);
 	}
 }
