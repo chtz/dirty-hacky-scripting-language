@@ -92,30 +92,67 @@ public class Test1 {
 		}
 		
 		public Value evalInContext(Context global, Context blockCtx) {
+			Value last = null;
 			for (Statement s : statements) {
-				s.eval(global, blockCtx);
+				last = s.eval(global, blockCtx);
 			}
-			return new IntegerValue(0);
+			return last;
 		}
 	}
 	
 	static abstract class Statement {
 		public static Statement parse(Tokenizer t) {
 			String token = t.next();
+			
 			t.pushback(token);
 			
 			if ("if".equals(token)) {
 				return IfStatement.parse(t);
 			}
-			if ("for".equals(token)) {
+			else if ("for".equals(token)) {
 				return ForStatement.parse(t);
+			}
+			else if ("def".equals(token)) {
+				return FunctionDefinitionStatement.parse(t);
+			}
+			else if ("call".equals(token)) {
+				return FunctionCall.parse(t);
 			}
 			else {
 				return AssignmentStatement.parse(t);
 			}
 		}
 		
-		public abstract void eval(Context global, Context ctx);
+		public abstract Value eval(Context global, Context ctx);
+	}
+	
+	static class FunctionDefinitionStatement extends Statement {
+		public String variable;
+		public Block block;
+		
+		public static FunctionDefinitionStatement parse(Tokenizer t) {
+			FunctionDefinitionStatement fds = new FunctionDefinitionStatement();
+			
+			String token = t.next();
+			if (!"def".equals(token)) throw new RuntimeException("def expected, got: " + token);
+			
+			fds.variable = t.next();
+			
+			fds.block = Block.parse(t);
+			
+			return fds;
+		}
+		
+		public Value eval(Context global, Context ctx) {
+			BlockValue blockValue = new BlockValue(block);
+			if (isGlobal(variable)) {
+				global.put(variable, blockValue);
+			}
+			else {
+				ctx.put(variable, blockValue);
+			}
+			return blockValue;
+		}
 	}
 	
 	static class AssignmentStatement extends Statement {
@@ -135,13 +172,15 @@ public class Test1 {
 			return as;
 		}
 		
-		public void eval(Context global, Context ctx) {
+		public Value eval(Context global, Context ctx) {
+			Value value = expression.eval(global, ctx);
 			if (isGlobal(variable)) {
-				global.put(variable, expression.eval(global, ctx));
+				global.put(variable, value);
 			}
 			else {
-				ctx.put(variable, expression.eval(global, ctx));
+				ctx.put(variable, value);
 			}
+			return value;
 		}
 	}
 	
@@ -178,16 +217,18 @@ public class Test1 {
 			return fs;
 		}
 		
-		public void eval(Context global, Context ctx) {
+		public Value eval(Context global, Context ctx) {
 			Context blockCtx = new Context(ctx);
 			
 			init.eval(global, blockCtx);
 			
+			Value last = null;
 			while (((IntegerValue) condition.eval(global, blockCtx)).value == 1) {
-				whileBlock.evalInContext(global, blockCtx);
+				last = whileBlock.evalInContext(global, blockCtx);
 				
 				increment.eval(global, blockCtx);
 			}
+			return last;
 		}
 	}
 	
@@ -220,13 +261,14 @@ public class Test1 {
 			return is;
 		}
 
-		public void eval(Context global, Context ctx) {
+		public Value eval(Context global, Context ctx) {
 			if (((IntegerValue) expression.eval(global, ctx)).value == 1) {
-				thenBlock.eval(global, ctx);
+				return thenBlock.eval(global, ctx);
 			}
 			else if (elseBlock != null) {
-				elseBlock.eval(global, ctx);
+				return elseBlock.eval(global, ctx);
 			}
+			else throw new RuntimeException("if without then or else");
 		}
 	}
 	
@@ -412,6 +454,7 @@ public class Test1 {
 		public StringLiteral stringLiteral; //XOR
 		public Expression expression; 		//XOR
 		public Variable variable;	  		//XOR
+		public FunctionCall call;			//XOR
 
 		public static Factor parse(Tokenizer t) {
 			Factor factor = new Factor();
@@ -422,6 +465,10 @@ public class Test1 {
 				factor.expression = Expression.parse(t);
 				
 				if (!")".equals(t.next())) throw new RuntimeException(") expected");
+			}
+			else if ("call".equals(token)) {
+				t.pushback(token);
+				factor.call = FunctionCall.parse(t);
 			}
 			else if (token.startsWith("'")) {
 				factor.stringLiteral = StringLiteral.parse(token); //FIXME (Tokenizer) string with spaces and "'" escaping
@@ -448,10 +495,37 @@ public class Test1 {
 			else if (expression != null) {
 				return expression.eval(global, ctx);
 			}
+			else if (call != null) {
+				return call.eval(global, ctx);
+			}
 			else if (variable != null) {
 				return variable.eval(global, ctx);
 			}
 			else throw new RuntimeException("invalid Factor");
+		}
+	}
+	
+	static class FunctionCall extends Statement {
+		public String variable;
+		
+		public static FunctionCall parse(Tokenizer t) {
+			FunctionCall fc = new FunctionCall();
+		
+			String token = t.next();
+			if (!"call".equals(token)) throw new RuntimeException("call expected, got: " + token);
+			
+			fc.variable = t.next();
+			
+			return fc;
+		}
+
+		public Value eval(Context global, Context ctx) {
+			if (isGlobal(variable)) {
+				return ((BlockValue) global.get(variable)).value.eval(global, ctx);
+			}
+			else {
+				return ((BlockValue) ctx.get(variable)).value.eval(global, ctx);
+			}
 		}
 	}
 	
@@ -591,10 +665,25 @@ public class Test1 {
 		}
 	}
 	
+	static class BlockValue extends Value {
+		public Block value;
+		public BlockValue(Block v) {
+			this.value = v;
+		}
+		public String toString() {
+			return value.toString();
+		}
+	}
+	
 	////
 	
 	@Test
 	public void test() {
+		assertEquals("117", eval("{ def hello { C := C + 3 ; result := 10 } ; C := 100 ; call hello ; D := 1 + call hello ; D := D + C }").get("D").toString());
+	}
+		
+	@Test
+	public void test2() {
 		assertEquals("ab", eval("{ C := 'a' + 'b' }").get("C").toString());
 		
 		assertEquals("5", eval("{ C := x ; for i := 0 ; i < 3 ; i := i + 1 { C := C + 1 } }", "x", 2).get("C").toString());
@@ -615,9 +704,9 @@ public class Test1 {
 	}
 	
 	private Context eval(String s, Context global, Context ctx) {
-		System.out.println(s);
-		Block.parse(new Tokenizer(s)).eval(global, ctx);
-		System.out.println(global.vars);
+		System.out.println("Eval: " + s);
+		System.out.println("Result: " + Block.parse(new Tokenizer(s)).eval(global, ctx));
+		System.out.println("Globals: " + global.vars);
 		return global;
 	}
 }
