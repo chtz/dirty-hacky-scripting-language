@@ -565,15 +565,11 @@ public class Test1 {
 				functionBlock = ((FunctionBlockValue) ctx.get(variable));
 			}
 			
-			System.out.println("call " + functionBlock); //DEBUG
-			
 			Context blockCtx = new Context(ctx);
 			Iterator<Expression> paramValueI = params.iterator();
 			for (String paramName : functionBlock.params) {
 				blockCtx.put(paramName, paramValueI.next().eval(global, ctx));
 			}
-			
-			System.out.println(" values " + blockCtx.vars); //DEBUG
 			
 			return functionBlock.value.evalInContext(global, blockCtx);
 		}
@@ -731,7 +727,7 @@ public class Test1 {
 	
 	@Test
 	public void test() {
-		assertEquals("6", eval("{ def add ( a ,  b ) { result := a + b } ; x := 1 ; D := call add ( x , 2 + 3 ) }").get("D").toString());
+		assertEquals("9", eval("{ def add ( a ,  b ) { result := a + b } ; x := 1 ; D := call add ( x , 2 + 3 ) + call add ( 1 , 2 ) }").get("D").toString());
 	}
 		
 	@Test
