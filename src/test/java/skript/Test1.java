@@ -728,10 +728,52 @@ public class Test1 {
 		}
 	}
 	
+	static class InternalValue extends Value {
+		public Object value;
+		public InternalValue(Object v) {
+			this.value = v;
+		}
+		public String toString() {
+			return value.toString();
+		}
+	}
+	
+	public static Value eval(String s) {
+		Context ctx = new Context();
+		ctx.put("map", new FunctionValue(new LinkedList<String>(), new IEvalInContext() {
+			public Value evalInContext(Context global, Context ctx) {
+				return new InternalValue(new HashMap<String,Value>());
+			}
+		}));
+		ctx.put("put", new FunctionValue(Arrays.asList("m","k","v"), new IEvalInContext() {
+			@SuppressWarnings("unchecked")
+			public Value evalInContext(Context global, Context ctx) {
+				String k = ctx.get("k").toString();
+				Value v = ctx.get("v");
+				((HashMap<String,Value>) ((InternalValue) ctx.get("m")).value).put(k, v);
+				return v;
+			}
+		}));
+		ctx.put("get", new FunctionValue(Arrays.asList("m","k"), new IEvalInContext() {
+			@SuppressWarnings("unchecked")
+			public Value evalInContext(Context global, Context ctx) {
+				String k = ctx.get("k").toString();
+				return ((HashMap<String,Value>) ((InternalValue) ctx.get("m")).value).get(k);
+			}
+		}));
+		
+		return Block.parse(new Tokenizer(s)).eval(new Context(), ctx);
+	}
+	
 	////
 	
 	@Test
 	public void test() {
+		assertEquals("1123", eval("{ x := call map ; y := call map ; call put ( y , 'foo' , 1000 ) ; call put ( x , 'foo' , 100 ) ; call put ( x , 'bar' , 23 ) ; result := call get ( y , 'foo' ) + call get ( x , 'foo' ) + call get ( x , 'bar' ) }").toString());
+	}
+	
+	@Test
+	public void test3() {
 		Context global = new Context();
 		Context ctx = new Context();
 		ctx.put("foo", new FunctionValue(Arrays.asList("a","b"), new IEvalInContext() {
@@ -739,34 +781,34 @@ public class Test1 {
 				return new IntegerValue(((IntegerValue)ctx.get("a")).value + ((IntegerValue)ctx.get("b")).value);
 			}
 		}));
-		assertEquals("6", eval("{ X := call foo ( 1 , 2 ) + 3 }", global, ctx).get("X").toString());
+		assertEquals("6", testEval("{ X := call foo ( 1 , 2 ) + 3 }", global, ctx).get("X").toString());
 	}
 		
 	@Test
 	public void test2() {
-		assertEquals("9", eval("{ def add ( a ,  b ) { result := a + b } ; x := 1 ; D := call add ( x , 2 + 3 ) + call add ( 1 , 2 ) }").get("D").toString());
-		assertEquals("117", eval("{ def hello { C := C + 3 ; result := 10 } ; C := 100 ; call hello ; D := 1 + call hello ; D := D + C }").get("D").toString());
+		assertEquals("9", testEval("{ def add ( a ,  b ) { result := a + b } ; x := 1 ; D := call add ( x , 2 + 3 ) + call add ( 1 , 2 ) }").get("D").toString());
+		assertEquals("117", testEval("{ def hello { C := C + 3 ; result := 10 } ; C := 100 ; call hello ; D := 1 + call hello ; D := D + C }").get("D").toString());
 		
-		assertEquals("ab", eval("{ C := 'a' + 'b' }").get("C").toString());
+		assertEquals("ab", testEval("{ C := 'a' + 'b' }").get("C").toString());
 		
-		assertEquals("5", eval("{ C := x ; for i := 0 ; i < 3 ; i := i + 1 { C := C + 1 } }", "x", 2).get("C").toString());
+		assertEquals("5", testEval("{ C := x ; for i := 0 ; i < 3 ; i := i + 1 { C := C + 1 } }", "x", 2).get("C").toString());
 		
-		assertEquals("-6", eval("{ if x > 1 then { C := 2 * x } else { b := 3 * x ; C := b } }", "x", -2).get("C").toString());
-		assertEquals("4",  eval("{ if x > 1 then { C := 2 * x } else { b := 3 * x ; C := b } }", "x",  2).get("C").toString());
+		assertEquals("-6", testEval("{ if x > 1 then { C := 2 * x } else { b := 3 * x ; C := b } }", "x", -2).get("C").toString());
+		assertEquals("4",  testEval("{ if x > 1 then { C := 2 * x } else { b := 3 * x ; C := b } }", "x",  2).get("C").toString());
 	}
 	
-	private Context eval(String s) {
-		return eval(s, "foo", 0);
+	private Context testEval(String s) {
+		return testEval(s, "foo", 0);
 	}
 	
-	private Context eval(String s, String name, int value) {
+	private Context testEval(String s, String name, int value) {
 		Context global = new Context();
 		Context ctx = new Context();
 		ctx.put(name, new IntegerValue(value));
-		return eval(s, global, ctx);
+		return testEval(s, global, ctx);
 	}
 	
-	private Context eval(String s, Context global, Context ctx) {
+	private Context testEval(String s, Context global, Context ctx) {
 		System.out.println("Eval: " + s);
 		System.out.println("Result: " + Block.parse(new Tokenizer(s)).eval(global, ctx));
 		System.out.println("Globals: " + global.vars);
