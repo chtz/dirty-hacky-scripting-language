@@ -2,6 +2,7 @@ package skript;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -63,7 +64,11 @@ public class Test1 {
 		}
 	}
 	
-	static class Block {
+	interface IEvalInContext {
+		public Value evalInContext(Context global, Context ctx);
+	}
+	
+	static class Block implements IEvalInContext {
 		public List<Statement> statements = new LinkedList<Statement>();
 		
 		public static Block parse(Tokenizer t) {
@@ -163,7 +168,7 @@ public class Test1 {
 		}
 		
 		public Value eval(Context global, Context ctx) {
-			FunctionBlockValue blockValue = new FunctionBlockValue(block, params);
+			FunctionValue blockValue = new FunctionValue(params, block);
 			if (isGlobal(variable)) {
 				global.put(variable, blockValue);
 			}
@@ -557,12 +562,12 @@ public class Test1 {
 		}
 
 		public Value eval(Context global, Context ctx) {
-			FunctionBlockValue functionBlock;
+			FunctionValue functionBlock;
 			if (isGlobal(variable)) {
-				functionBlock = (FunctionBlockValue) global.get(variable);
+				functionBlock = (FunctionValue) global.get(variable);
 			}
 			else {
-				functionBlock = ((FunctionBlockValue) ctx.get(variable));
+				functionBlock = ((FunctionValue) ctx.get(variable));
 			}
 			
 			Context blockCtx = new Context(ctx);
@@ -711,10 +716,10 @@ public class Test1 {
 		}
 	}
 	
-	static class FunctionBlockValue extends Value {
-		public Block value;
+	static class FunctionValue extends Value {
+		public IEvalInContext value;
 		public List<String> params;
-		public FunctionBlockValue(Block v, List<String> params) {
+		public FunctionValue(List<String> params, IEvalInContext v) {
 			this.value = v;
 			this.params = params;
 		}
@@ -727,11 +732,19 @@ public class Test1 {
 	
 	@Test
 	public void test() {
-		assertEquals("9", eval("{ def add ( a ,  b ) { result := a + b } ; x := 1 ; D := call add ( x , 2 + 3 ) + call add ( 1 , 2 ) }").get("D").toString());
+		Context global = new Context();
+		Context ctx = new Context();
+		ctx.put("foo", new FunctionValue(Arrays.asList("a","b"), new IEvalInContext() {
+			public Value evalInContext(Context global, Context ctx) {
+				return new IntegerValue(((IntegerValue)ctx.get("a")).value + ((IntegerValue)ctx.get("b")).value);
+			}
+		}));
+		assertEquals("6", eval("{ X := call foo ( 1 , 2 ) + 3 }", global, ctx).get("X").toString());
 	}
 		
 	@Test
 	public void test2() {
+		assertEquals("9", eval("{ def add ( a ,  b ) { result := a + b } ; x := 1 ; D := call add ( x , 2 + 3 ) + call add ( 1 , 2 ) }").get("D").toString());
 		assertEquals("117", eval("{ def hello { C := C + 3 ; result := 10 } ; C := 100 ; call hello ; D := 1 + call hello ; D := D + C }").get("D").toString());
 		
 		assertEquals("ab", eval("{ C := 'a' + 'b' }").get("C").toString());
