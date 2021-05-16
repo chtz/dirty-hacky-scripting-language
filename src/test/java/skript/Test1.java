@@ -3,6 +3,7 @@ package skript;
 import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -128,6 +129,7 @@ public class Test1 {
 	
 	static class FunctionDefinitionStatement extends Statement {
 		public String variable;
+		public List<String> params = new LinkedList<String>();
 		public Block block;
 		
 		public static FunctionDefinitionStatement parse(Tokenizer t) {
@@ -138,13 +140,30 @@ public class Test1 {
 			
 			fds.variable = t.next();
 			
+			token = t.next();
+			if ("(".equals(token)) {
+				for (;;) {
+					fds.params.add(t.next());
+					
+					token = t.next();
+					if (")".equals(token)) {
+						break;
+					}
+					
+					if (!",".equals(token)) throw new RuntimeException(", expected, got: " + token);
+				}
+			}
+			else {
+				t.pushback(token);
+			}
+			
 			fds.block = Block.parse(t);
 			
 			return fds;
 		}
 		
 		public Value eval(Context global, Context ctx) {
-			BlockValue blockValue = new BlockValue(block);
+			FunctionBlockValue blockValue = new FunctionBlockValue(block, params);
 			if (isGlobal(variable)) {
 				global.put(variable, blockValue);
 			}
@@ -507,6 +526,7 @@ public class Test1 {
 	
 	static class FunctionCall extends Statement {
 		public String variable;
+		public List<Expression> params = new LinkedList<Expression>();
 		
 		public static FunctionCall parse(Tokenizer t) {
 			FunctionCall fc = new FunctionCall();
@@ -516,16 +536,46 @@ public class Test1 {
 			
 			fc.variable = t.next();
 			
+			token = t.next();
+			if ("(".equals(token)) {
+				for (;;) {
+					fc.params.add(Expression.parse(t));
+					
+					token = t.next();
+					if (")".equals(token)) {
+						break;
+					}
+					
+					if (!",".equals(token)) throw new RuntimeException(", expected, got: " + token);
+				}
+			}
+			else {
+				t.pushback(token);
+			}
+			
 			return fc;
 		}
 
 		public Value eval(Context global, Context ctx) {
+			FunctionBlockValue functionBlock;
 			if (isGlobal(variable)) {
-				return ((BlockValue) global.get(variable)).value.eval(global, ctx);
+				functionBlock = (FunctionBlockValue) global.get(variable);
 			}
 			else {
-				return ((BlockValue) ctx.get(variable)).value.eval(global, ctx);
+				functionBlock = ((FunctionBlockValue) ctx.get(variable));
 			}
+			
+			System.out.println("call " + functionBlock); //DEBUG
+			
+			Context blockCtx = new Context(ctx);
+			Iterator<Expression> paramValueI = params.iterator();
+			for (String paramName : functionBlock.params) {
+				blockCtx.put(paramName, paramValueI.next().eval(global, ctx));
+			}
+			
+			System.out.println(" values " + blockCtx.vars); //DEBUG
+			
+			return functionBlock.value.evalInContext(global, blockCtx);
 		}
 	}
 	
@@ -665,13 +715,15 @@ public class Test1 {
 		}
 	}
 	
-	static class BlockValue extends Value {
+	static class FunctionBlockValue extends Value {
 		public Block value;
-		public BlockValue(Block v) {
+		public List<String> params;
+		public FunctionBlockValue(Block v, List<String> params) {
 			this.value = v;
+			this.params = params;
 		}
 		public String toString() {
-			return value.toString();
+			return "function" + params;
 		}
 	}
 	
@@ -679,11 +731,13 @@ public class Test1 {
 	
 	@Test
 	public void test() {
-		assertEquals("117", eval("{ def hello { C := C + 3 ; result := 10 } ; C := 100 ; call hello ; D := 1 + call hello ; D := D + C }").get("D").toString());
+		assertEquals("6", eval("{ def add ( a ,  b ) { result := a + b } ; x := 1 ; D := call add ( x , 2 + 3 ) }").get("D").toString());
 	}
 		
 	@Test
 	public void test2() {
+		assertEquals("117", eval("{ def hello { C := C + 3 ; result := 10 } ; C := 100 ; call hello ; D := 1 + call hello ; D := D + C }").get("D").toString());
+		
 		assertEquals("ab", eval("{ C := 'a' + 'b' }").get("C").toString());
 		
 		assertEquals("5", eval("{ C := x ; for i := 0 ; i < 3 ; i := i + 1 { C := C + 1 } }", "x", 2).get("C").toString());
