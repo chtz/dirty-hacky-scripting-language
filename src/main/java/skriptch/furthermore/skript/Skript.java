@@ -315,7 +315,8 @@ public class Skript {
 			else if (elseBlock != null) {
 				return elseBlock.eval(global, ctx);
 			}
-			else throw new RuntimeException("if without then or else");
+//			else throw new RuntimeException("if without then or else");
+			return new IntegerValue(0);
 		}
 	}
 	
@@ -756,6 +757,10 @@ public class Skript {
 		}
 		public String toString() {
 			return "function" + params;
+		}
+		@Override
+		public Value eq(Value v) {
+			return new IntegerValue(v instanceof FunctionValue && value == ((FunctionValue) v).value ? 1 : 0);
 		}
 	}
 	

@@ -1,0 +1,27 @@
+{
+    def iff(c,a,b) {
+        if c then {
+            if not(a=null) then {
+                a();
+            }
+        } 
+        else {
+            if not(b=null) then {
+                b();
+            }
+        }
+    };
+
+    def yes {
+        puts('yes');
+    };
+
+    def no {
+        puts('no');
+    };
+
+    iff(1=1,yes,no);
+    iff(1=0,yes,no);
+    iff(1=1,null,no);
+    iff(1=0,yes,null);
+}
