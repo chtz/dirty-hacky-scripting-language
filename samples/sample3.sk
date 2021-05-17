@@ -1,0 +1,19 @@
+{
+    def swap ( m ) {
+        a := get ( m , 'a' ) ;
+        b := get ( m , 'b' ) ;
+        put ( m , 'a' , b ) ;
+        put ( m , 'b' , a ) ;
+        result := m
+    } ;
+
+    m := map ( ) ;
+    put ( m , 'a' , 'hello' ) ;
+    put ( m , 'b' , 'world' ) ;
+
+    puts ( get ( m , 'a' ) + '_' + get ( m , 'b' ) ) ;
+
+    swap ( m ) ;
+
+    puts ( get ( m , 'a' ) + '_' + get ( m , 'b' ) ) ;
+}

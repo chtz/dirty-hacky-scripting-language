@@ -1,7 +1,9 @@
 package skriptch.furthermore.skript;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -787,15 +789,18 @@ public class Skript {
 	}
 	
 	public static void main(String[] args) throws IOException {
+		InputStream in = args.length == 0 ? System.in : new FileInputStream(args[0]);
+		
 		StringBuilder sb = new StringBuilder();
-		try (BufferedReader in = new BufferedReader(new InputStreamReader(System.in))) {
-			for (String line = in.readLine(); line != null; line = in.readLine()) {
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
+			for (String line = reader.readLine(); line != null; line = reader.readLine()) {
 				if (sb.length() > 0) {
 					sb.append("\n");
 				}
 				sb.append(line);
 			}
 		}
+		
 		eval(sb.toString());
 	}
 }
