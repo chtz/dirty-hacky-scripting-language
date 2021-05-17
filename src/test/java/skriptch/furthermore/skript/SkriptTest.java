@@ -17,6 +17,7 @@ public class SkriptTest {
 	@Test
 	public void test() {
 		assertEquals("1123", eval("{ x := map ( ) ; y := map ( ) ; put ( y , 'foo' , 1000 ) ; put ( x , 'foo' , 100 ) ; put ( x , 'bar' , 23 ) ; result := get ( y , 'foo' ) + get ( x , 'foo' ) + get ( x , 'bar' ) }").toString());
+		assertEquals("1123", eval("{x:=map(); y:=map(); put(y,'foo',1000); put(x,'foo',100); put(x,'bar',23); result:=get(y,'foo')+get(x,'foo')+get(x,'bar')}").toString());
 		
 		Context ctx = new Context();
 		ctx.put("foo", new FunctionValue(Arrays.asList("a","b"), new IEvalInContext() {
