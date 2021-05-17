@@ -1,0 +1,14 @@
+{
+    def oddEven ( x ) {
+        half := x / 2 ;
+        if x = half * 2 then {
+            puts ( 'even' )
+        } else {
+            puts ( 'odd' )
+        }
+    } ;
+
+    oddEven ( 3 ) ;
+    oddEven ( 7 ) ;
+    oddEven ( 10 ) ;
+}
