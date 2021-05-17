@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -19,6 +20,15 @@ public class Skript {
 		public Context() {}
 		public Context(Context parent) {
 			this.parent = parent;
+		}
+		public boolean contains(String name) {
+			if (vars.containsKey(name)) {
+				return true;
+			}
+			else if (parent != null) {
+				return parent.contains(name);
+			}
+			else return false;
 		}
 		public void put(String name, Value value) {
 			if (!replace(name, value)) {
@@ -779,13 +789,19 @@ public class Skript {
 		return eval(s, ctx);
 	}
 	
+	static void putIfNotExisting(Context ctx, String key, Value value) {
+		if (!ctx.contains(key)) {
+			ctx.put(key, value);
+		}
+	}
+	
 	public static Value eval(String s, Context ctx) {
-		ctx.put("map", new FunctionValue(new LinkedList<String>(), new IEvalInContext() {
+		putIfNotExisting(ctx, "map", new FunctionValue(new LinkedList<String>(), new IEvalInContext() {
 			public Value evalInContext(Context global, Context ctx) {
 				return new InternalValue(new HashMap<String,Value>());
 			}
 		}));
-		ctx.put("mput", new FunctionValue(Arrays.asList("m","k","v"), new IEvalInContext() {
+		putIfNotExisting(ctx, "mput", new FunctionValue(Arrays.asList("m","k","v"), new IEvalInContext() {
 			@SuppressWarnings("unchecked")
 			public Value evalInContext(Context global, Context ctx) {
 				String k = ctx.get("k").toString();
@@ -795,7 +811,7 @@ public class Skript {
 				return m;
 			}
 		}));
-		ctx.put("mget", new FunctionValue(Arrays.asList("m","k"), new IEvalInContext() {
+		putIfNotExisting(ctx, "mget", new FunctionValue(Arrays.asList("m","k"), new IEvalInContext() {
 			@SuppressWarnings("unchecked")
 			public Value evalInContext(Context global, Context ctx) {
 				String k = ctx.get("k").toString();
@@ -803,25 +819,25 @@ public class Skript {
 			}
 		}));
 		
-		ctx.put("list", new FunctionValue(new LinkedList<String>(), new IEvalInContext() {
+		putIfNotExisting(ctx, "list", new FunctionValue(new LinkedList<String>(), new IEvalInContext() {
 			public Value evalInContext(Context global, Context ctx) {
 				return new InternalValue(new LinkedList<Value>());
 			}
 		}));
-		ctx.put("lget", new FunctionValue(Arrays.asList("l","i"), new IEvalInContext() {
+		putIfNotExisting(ctx, "lget", new FunctionValue(Arrays.asList("l","i"), new IEvalInContext() {
 			@SuppressWarnings("unchecked")
 			public Value evalInContext(Context global, Context ctx) {
 				int i = ((IntegerValue)ctx.get("i")).value;
 				return ((LinkedList<Value>) ((InternalValue) ctx.get("l")).value).get(i);
 			}
 		}));
-		ctx.put("lsize", new FunctionValue(Arrays.asList("l"), new IEvalInContext() {
+		putIfNotExisting(ctx, "lsize", new FunctionValue(Arrays.asList("l"), new IEvalInContext() {
 			@SuppressWarnings("unchecked")
 			public Value evalInContext(Context global, Context ctx) {
 				return new IntegerValue(((LinkedList<Value>) ((InternalValue) ctx.get("l")).value).size());
 			}
 		}));
-		ctx.put("ladd", new FunctionValue(Arrays.asList("l","v"), new IEvalInContext() {
+		putIfNotExisting(ctx, "ladd", new FunctionValue(Arrays.asList("l","v"), new IEvalInContext() {
 			@SuppressWarnings("unchecked")
 			public Value evalInContext(Context global, Context ctx) {
 				Value v = ctx.get("v");
@@ -831,17 +847,20 @@ public class Skript {
 			}
 		}));
 		
-		ctx.put("puts", new FunctionValue(Arrays.asList("s"), new IEvalInContext() {
+		putIfNotExisting(ctx, "puts", new FunctionValue(Arrays.asList("s"), new IEvalInContext() {
 			public Value evalInContext(Context global, Context ctx) {
 				String s = ctx.get("s").toString();
-				System.out.println(s);
+				//System.out.println(s);
+				PrintStream out = (PrintStream)((InternalValue) ctx.get("out")).value;
+				out.println(s);
 				return new IntegerValue(0);
 			}
 		}));
-		ctx.put("gets", new FunctionValue(new LinkedList<>(), new IEvalInContext() {
-			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+		putIfNotExisting(ctx, "gets", new FunctionValue(new LinkedList<>(), new IEvalInContext() {
+			//BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 			public Value evalInContext(Context global, Context ctx) {
 				try {
+					BufferedReader in = (BufferedReader)((InternalValue) ctx.get("in")).value;
 					return new StringValue(in.readLine());
 				} catch (IOException e) {
 					throw new RuntimeException(e);
@@ -849,26 +868,33 @@ public class Skript {
 			}
 		}));
 		
-		ctx.put("not", new FunctionValue(Arrays.asList("v"), new IEvalInContext() {
+		putIfNotExisting(ctx, "not", new FunctionValue(Arrays.asList("v"), new IEvalInContext() {
 			public Value evalInContext(Context global, Context ctx) {
 				IntegerValue iv = (IntegerValue) ctx.get("v");
 				return new IntegerValue(iv.value == 1 ? 0 : 1);
 			}
 		}));
+		
 //		ctx.put("null", new FunctionValue(Arrays.asList("v"), new IEvalInContext() {
 //			public Value evalInContext(Context global, Context ctx) {
 //				StringValue sv = (StringValue) ctx.get("v");
 //				return new IntegerValue(sv.value == null ? 1 : 0);
 //			}
 //		}));
-		ctx.put("null", new StringValue(null));
+		putIfNotExisting(ctx, "null", new StringValue(null));
+		
+		putIfNotExisting(ctx, "in", new InternalValue(new BufferedReader(new InputStreamReader(System.in))));
+		putIfNotExisting(ctx, "out", new InternalValue(System.out));
 		
 		return Block.parse(new Tokenizer(s)).eval(new Context(), ctx);
 	}
 	
 	public static void main(String[] args) throws IOException {
 		InputStream in = args.length == 0 ? System.in : new FileInputStream(args[0]);
-		
+		eval(readLines(in));
+	}
+
+	public static String readLines(InputStream in) throws IOException {
 		StringBuilder sb = new StringBuilder();
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
 			for (String line = reader.readLine(); line != null; line = reader.readLine()) {
@@ -878,7 +904,6 @@ public class Skript {
 				sb.append(line);
 			}
 		}
-		
-		eval(sb.toString());
+		return sb.toString();
 	}
 }
