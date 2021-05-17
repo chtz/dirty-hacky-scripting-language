@@ -136,6 +136,49 @@ Output:
 your name?
 hello Chris
 ```
+# sample9.sk
+Script:
+```
+{
+    a := 2;
+    b := 4;
+    c := 6;
+    d := 8;
+    
+    puts('puts((a * b + c) * d);');
+    puts((a * b + c) * d);
+    
+    puts('puts(a * b + c * d);');
+    puts(a * b + c * d);
+
+    puts('puts(a * (b + c) * d);');
+    puts(a * (b + c) * d);
+    
+    if c > d then {
+        puts('c > d')
+    } else {
+        puts('NOT c > d')
+    };
+
+    if c < d then {
+        puts('c < d')
+    } 
+    else {
+        puts('NOT c < d')
+    }
+}
+```
+Output:
+```
+puts((a * b + c) * d);
+112
+puts(a * b + c * d);
+56
+puts(a * (b + c) * d);
+160
+NOT c > d
+c < d
+```
 # sample8.sk
 Script:
 ```
