@@ -129,12 +129,12 @@ Script:
 ```
 Input:
 ```
-hallo
+Chris
 ```
 Output:
 ```
 your name?
-hello hallo
+hello Chris
 ```
 # sample8.sk
 Script:
