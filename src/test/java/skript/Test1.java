@@ -38,7 +38,7 @@ public class Test1 {
 	
 	static class Tokenizer {
 		private StringTokenizer st;
-		private String pushedBack;
+		private LinkedList<String> pushedBack = new LinkedList<String>();
 		public Tokenizer(String s) {
 			st = new StringTokenizer(s);
 		}
@@ -46,21 +46,18 @@ public class Test1 {
 			return pushedBack != null || st.hasMoreTokens();
 		}
 		public String next() {
-			if (pushedBack != null) {
-				try {
-					return pushedBack;
-				}
-				finally {
-					pushedBack = null;
-				}
+			String next;
+			if (!pushedBack.isEmpty()) {
+				next = pushedBack.removeFirst();
 			}
 			else {
-				return st.hasMoreTokens() ? st.nextToken() : null;
+				next = st.hasMoreTokens() ? st.nextToken() : null;
 			}
+			return next;
 		}
 		
 		public void pushback(String token) {
-			pushedBack = token;
+			pushedBack.addFirst(token);
 		}
 	}
 	
@@ -121,11 +118,16 @@ public class Test1 {
 			else if ("def".equals(token)) {
 				return FunctionDefinitionStatement.parse(t);
 			}
-			else if ("call".equals(token)) {
-				return FunctionCall.parse(t);
-			}
 			else {
-				return AssignmentStatement.parse(t);
+				token = t.next();
+				String token2 = t.next();
+				t.pushback(token2);
+				t.pushback(token);
+				
+				if ("(".equals(token2)) {
+					return FunctionCall.parse(t);
+				}
+				else return AssignmentStatement.parse(t);
 			}
 		}
 		
@@ -490,19 +492,25 @@ public class Test1 {
 				
 				if (!")".equals(t.next())) throw new RuntimeException(") expected");
 			}
-			else if ("call".equals(token)) {
-				t.pushback(token);
-				factor.call = FunctionCall.parse(t);
-			}
 			else if (token.startsWith("'")) {
 				factor.stringLiteral = StringLiteral.parse(token); //FIXME (Tokenizer) string with spaces and "'" escaping
 			}
 			else {
-				try {
-					factor.number = Number.parse(token);
+				String token2 = t.next();
+				t.pushback(token2);
+				
+				if ("(".equals(token2)) {
+					t.pushback(token);
+					
+					factor.call = FunctionCall.parse(t);
 				}
-				catch (NumberFormatException e) {
-					factor.variable = Variable.parse(token);
+				else {
+					try {
+						factor.number = Number.parse(token);
+					}
+					catch (NumberFormatException e) {
+						factor.variable = Variable.parse(token);
+					}
 				}
 			}
 			
@@ -536,26 +544,29 @@ public class Test1 {
 		public static FunctionCall parse(Tokenizer t) {
 			FunctionCall fc = new FunctionCall();
 		
-			String token = t.next();
-			if (!"call".equals(token)) throw new RuntimeException("call expected, got: " + token);
-			
 			fc.variable = t.next();
 			
-			token = t.next();
-			if ("(".equals(token)) {
-				for (;;) {
-					fc.params.add(Expression.parse(t));
-					
-					token = t.next();
-					if (")".equals(token)) {
-						break;
-					}
-					
-					if (!",".equals(token)) throw new RuntimeException(", expected, got: " + token);
+			String token = t.next();
+			if (!"(".equals(token)) throw new RuntimeException("( expected, got: " + token);
+			
+			for (;;) {
+				token = t.next();
+				if (")".equals(token)) {
+					break;
 				}
-			}
-			else {
-				t.pushback(token);
+				else {
+					t.pushback(token);
+				}
+				
+				System.err.println("Expression start: " + token);
+				fc.params.add(Expression.parse(t));
+				
+				token = t.next();
+				if (")".equals(token)) {
+					break;
+				}
+				
+				if (!",".equals(token)) throw new RuntimeException(", expected, got: " + token);
 			}
 			
 			return fc;
@@ -769,7 +780,7 @@ public class Test1 {
 	
 	@Test
 	public void test() {
-		assertEquals("1123", eval("{ x := call map ; y := call map ; call put ( y , 'foo' , 1000 ) ; call put ( x , 'foo' , 100 ) ; call put ( x , 'bar' , 23 ) ; result := call get ( y , 'foo' ) + call get ( x , 'foo' ) + call get ( x , 'bar' ) }").toString());
+		assertEquals("1123", eval("{ x := map ( ) ; y := map ( ) ; put ( y , 'foo' , 1000 ) ; put ( x , 'foo' , 100 ) ; put ( x , 'bar' , 23 ) ; result := get ( y , 'foo' ) + get ( x , 'foo' ) + get ( x , 'bar' ) }").toString());
 	}
 	
 	@Test
@@ -781,13 +792,13 @@ public class Test1 {
 				return new IntegerValue(((IntegerValue)ctx.get("a")).value + ((IntegerValue)ctx.get("b")).value);
 			}
 		}));
-		assertEquals("6", testEval("{ X := call foo ( 1 , 2 ) + 3 }", global, ctx).get("X").toString());
+		assertEquals("6", testEval("{ X := foo ( 1 , 2 ) + 3 }", global, ctx).get("X").toString());
 	}
 		
 	@Test
 	public void test2() {
-		assertEquals("9", testEval("{ def add ( a ,  b ) { result := a + b } ; x := 1 ; D := call add ( x , 2 + 3 ) + call add ( 1 , 2 ) }").get("D").toString());
-		assertEquals("117", testEval("{ def hello { C := C + 3 ; result := 10 } ; C := 100 ; call hello ; D := 1 + call hello ; D := D + C }").get("D").toString());
+		assertEquals("9", testEval("{ def add ( a ,  b ) { result := a + b } ; x := 1 ; D := add ( x , 2 + 3 ) + add ( 1 , 2 ) }").get("D").toString());
+		assertEquals("117", testEval("{ def hello { C := C + 3 ; result := 10 } ; C := 100 ; hello ( ) ; D := 1 + hello ( ) ; D := D + C }").get("D").toString());
 		
 		assertEquals("ab", testEval("{ C := 'a' + 'b' }").get("C").toString());
 		
