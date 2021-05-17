@@ -740,7 +740,7 @@ public class Skript {
 			return new StringValue(this.value + ((StringValue) v).value);
 		}
 		public Value eq(Value v) {
-			return new IntegerValue(this.value.equals(((StringValue) v).value) ? 1 : 0);
+			return new IntegerValue(this.value == null && ((StringValue) v).value == null || this.value.equals(((StringValue) v).value) ? 1 : 0);
 		}
 		public String toString() {
 			return value;
@@ -850,12 +850,13 @@ public class Skript {
 				return new IntegerValue(iv.value == 1 ? 0 : 1);
 			}
 		}));
-		ctx.put("null", new FunctionValue(Arrays.asList("v"), new IEvalInContext() {
-			public Value evalInContext(Context global, Context ctx) {
-				StringValue sv = (StringValue) ctx.get("v");
-				return new IntegerValue(sv.value == null ? 1 : 0);
-			}
-		}));
+//		ctx.put("null", new FunctionValue(Arrays.asList("v"), new IEvalInContext() {
+//			public Value evalInContext(Context global, Context ctx) {
+//				StringValue sv = (StringValue) ctx.get("v");
+//				return new IntegerValue(sv.value == null ? 1 : 0);
+//			}
+//		}));
+		ctx.put("null", new StringValue(null));
 		
 		return Block.parse(new Tokenizer(s)).eval(new Context(), ctx);
 	}

@@ -1,6 +1,6 @@
 {
     count := 0;
-    for line := gets(); not(null(line)); line := gets() {
+    for line := gets(); not(line = null); line := gets() {
         puts('$ ' + line);
         count := count + 1;
     };
