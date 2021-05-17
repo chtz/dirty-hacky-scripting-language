@@ -11,7 +11,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
 
 public class Skript {
 	static class Context { 
@@ -38,23 +37,28 @@ public class Skript {
 	}
 	
 	static class Tokenizer {
-		private StringTokenizer st;
+		private Scanner st;
 		private LinkedList<String> pushedBack = new LinkedList<String>();
 		public Tokenizer(String s) {
-			st = new StringTokenizer(s);
+			st = new Scanner(s);
 		}
 		public boolean hasMore() {
-			return pushedBack != null || st.hasMoreTokens();
+			if (!pushedBack.isEmpty()) return true;
+			
+			String next = st.nextToken();
+			if (next != null) {
+				pushback(next);
+			}
+			
+			return next != null;
 		}
 		public String next() {
-			String next;
 			if (!pushedBack.isEmpty()) {
-				next = pushedBack.removeFirst();
+				return pushedBack.removeFirst();
 			}
 			else {
-				next = st.hasMoreTokens() ? st.nextToken() : null;
+				return st.nextToken();
 			}
-			return next;
 		}
 		
 		public void pushback(String token) {

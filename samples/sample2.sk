@@ -1,5 +1,5 @@
 {
-    for i := 0 ; i < 3 ; i := i + 1 { 
-        puts ( 'hallo' )
+    for i:=0; i<3; i:=i+1 { 
+        puts('hallo')
     }
 }

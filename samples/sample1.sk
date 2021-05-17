@@ -1,4 +1,4 @@
 { 
-    puts ( 'hello' ) ;
-    puts ( 'world' ) ;
+    puts('hello world' /* <- prints "hello world" to the console */ );
+    puts('hallo Welt')
 }

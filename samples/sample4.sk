@@ -1,14 +1,14 @@
 {
-    def oddEven ( x ) {
-        half := x / 2 ;
+    def oddEven(x) {
+        half := x / 2;
         if x = half * 2 then {
-            puts ( 'even' )
+            puts('even')
         } else {
-            puts ( 'odd' )
+            puts('odd')
         }
     } ;
 
-    oddEven ( 3 ) ;
-    oddEven ( 7 ) ;
-    oddEven ( 10 ) ;
+    oddEven(3);
+    oddEven(7);
+    oddEven(10)
 }
