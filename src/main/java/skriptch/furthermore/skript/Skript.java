@@ -764,20 +764,49 @@ public class Skript {
 				return new InternalValue(new HashMap<String,Value>());
 			}
 		}));
-		ctx.put("put", new FunctionValue(Arrays.asList("m","k","v"), new IEvalInContext() {
+		ctx.put("mput", new FunctionValue(Arrays.asList("m","k","v"), new IEvalInContext() {
 			@SuppressWarnings("unchecked")
 			public Value evalInContext(Context global, Context ctx) {
 				String k = ctx.get("k").toString();
 				Value v = ctx.get("v");
-				((HashMap<String,Value>) ((InternalValue) ctx.get("m")).value).put(k, v);
-				return v;
+				InternalValue m = (InternalValue) ctx.get("m");
+				((HashMap<String,Value>) m.value).put(k, v);
+				return m;
 			}
 		}));
-		ctx.put("get", new FunctionValue(Arrays.asList("m","k"), new IEvalInContext() {
+		ctx.put("mget", new FunctionValue(Arrays.asList("m","k"), new IEvalInContext() {
 			@SuppressWarnings("unchecked")
 			public Value evalInContext(Context global, Context ctx) {
 				String k = ctx.get("k").toString();
 				return ((HashMap<String,Value>) ((InternalValue) ctx.get("m")).value).get(k);
+			}
+		}));
+		
+		ctx.put("list", new FunctionValue(new LinkedList<String>(), new IEvalInContext() {
+			public Value evalInContext(Context global, Context ctx) {
+				return new InternalValue(new LinkedList<Value>());
+			}
+		}));
+		ctx.put("lget", new FunctionValue(Arrays.asList("l","i"), new IEvalInContext() {
+			@SuppressWarnings("unchecked")
+			public Value evalInContext(Context global, Context ctx) {
+				int i = ((IntegerValue)ctx.get("i")).value;
+				return ((LinkedList<Value>) ((InternalValue) ctx.get("l")).value).get(i);
+			}
+		}));
+		ctx.put("lsize", new FunctionValue(Arrays.asList("l"), new IEvalInContext() {
+			@SuppressWarnings("unchecked")
+			public Value evalInContext(Context global, Context ctx) {
+				return new IntegerValue(((LinkedList<Value>) ((InternalValue) ctx.get("l")).value).size());
+			}
+		}));
+		ctx.put("ladd", new FunctionValue(Arrays.asList("l","v"), new IEvalInContext() {
+			@SuppressWarnings("unchecked")
+			public Value evalInContext(Context global, Context ctx) {
+				Value v = ctx.get("v");
+				InternalValue l = (InternalValue) ctx.get("l");
+				((LinkedList<Value>) l.value).add(v);
+				return l;
 			}
 		}));
 		

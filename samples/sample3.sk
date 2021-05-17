@@ -1,19 +1,19 @@
 {
     def swap(m) {
-        a := get(m,'a');
-        b := get(m,'b');
-        put(m,'a',b);
-        put(m,'b',a);
+        a := mget(m,'a');
+        b := mget(m,'b');
+        mput(m,'a',b);
+        mput(m,'b',a);
         result := m
     };
 
     def print(m) {
-        puts(get(m,'a') + ' ' + get(m,'b'));
+        puts(mget(m,'a') + ' ' + mget(m,'b'));
     };
 
     m := map();
-    put(m,'a','hello');
-    put(m,'b','world');
+    mput(m,'a','hello');
+    mput(m,'b','world');
 
     print(m);
     swap(m);
