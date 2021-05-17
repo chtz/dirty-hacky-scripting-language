@@ -1,0 +1,6 @@
+{
+    l := ladd(ladd(list(),'hallo'),'welt');
+    for i:=0; i<lsize(l); i:=i+1 {
+        puts(lget(l,i))
+    }
+}

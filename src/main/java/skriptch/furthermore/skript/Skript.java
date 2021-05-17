@@ -21,7 +21,23 @@ public class Skript {
 			this.parent = parent;
 		}
 		public void put(String name, Value value) {
-			vars.put(name, value);
+			if (!replace(name, value)) {
+				vars.put(name, value);
+			}
+		}
+		public boolean replace(String name, Value value) {
+			if (vars.containsKey(name)) {
+				vars.put(name, value);
+				return true;
+			}
+			else {
+				if (parent != null) {
+					return parent.replace(name, value);
+				}
+				else {
+					return false;
+				}
+			}
 		}
 		public Value get(String name) {
 			if (vars.containsKey(name)) {
@@ -815,6 +831,29 @@ public class Skript {
 				String s = ctx.get("s").toString();
 				System.out.println(s);
 				return new IntegerValue(0);
+			}
+		}));
+		ctx.put("gets", new FunctionValue(new LinkedList<>(), new IEvalInContext() {
+			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+			public Value evalInContext(Context global, Context ctx) {
+				try {
+					return new StringValue(in.readLine());
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}));
+		
+		ctx.put("notnull", new FunctionValue(Arrays.asList("v"), new IEvalInContext() {
+			public Value evalInContext(Context global, Context ctx) {
+				StringValue sv = (StringValue) ctx.get("v");
+				return new IntegerValue(sv.value == null ? 0 : 1);
+			}
+		}));
+		ctx.put("isnull", new FunctionValue(Arrays.asList("v"), new IEvalInContext() {
+			public Value evalInContext(Context global, Context ctx) {
+				StringValue sv = (StringValue) ctx.get("v");
+				return new IntegerValue(sv.value == null ? 1 : 0);
 			}
 		}));
 		
