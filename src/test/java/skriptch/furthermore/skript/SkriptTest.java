@@ -61,6 +61,7 @@ public class SkriptTest {
 	@Test
 	public void samples() throws FileNotFoundException, IOException {
 		try (PrintStream out = new PrintStream(new FileOutputStream("samples.md"))) {
+			out.println("# Challenge \n Write an interpreter that can run the following sample programs. Winning criteria: simplicity (KISS) and grace (i.e. the opposite of the reference implementation). Alternative winning criteria: as dirty-hacky and as few LOCs as possible ;-)");
 			for (File f : new File("samples").listFiles()) {
 				if (f.getName().endsWith(".sk")) {
 					String script;
@@ -82,7 +83,7 @@ public class SkriptTest {
 					ctx.put("out", new InternalValue(new PrintStream(bout)));
 					eval(script, ctx);
 					
-					out.println("# " + f.getName());
+					out.println("## " + f.getName());
 					out.println("Script:");
 					out.println(markdownScript(script));
 					if (!"".equals(input)) {

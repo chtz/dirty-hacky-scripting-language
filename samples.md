@@ -1,4 +1,6 @@
-# sample1.sk
+# Challenge 
+ Write an interpreter that can run the following sample programs. Winning criteria: simplicity (KISS) and grace (i.e. the opposite of the reference implementation). Alternative winning criteria: as dirty-hacky and as few LOCs as possible ;-)
+## sample1.sk
 Script:
 ```
 { 
@@ -11,7 +13,7 @@ Output:
 hello world
 hallo Welt
 ```
-# sample5.sk
+## sample5.sk
 Script:
 ```
 {
@@ -26,7 +28,7 @@ Output:
 hallo
 welt
 ```
-# sample4.sk
+## sample4.sk
 Script:
 ```
 {
@@ -50,7 +52,7 @@ odd
 odd
 even
 ```
-# sample7.sk
+## sample7.sk
 Script:
 ```
 {
@@ -73,7 +75,7 @@ $ hallo
 $ welt
 2
 ```
-# sample3.sk
+## sample3.sk
 Script:
 ```
 {
@@ -103,7 +105,7 @@ Output:
 hello world
 world hello
 ```
-# sample2.sk
+## sample2.sk
 Script:
 ```
 {
@@ -118,7 +120,7 @@ hallo
 hallo
 hallo
 ```
-# sample6.sk
+## sample6.sk
 Script:
 ```
 {
@@ -136,7 +138,7 @@ Output:
 your name?
 hello Chris
 ```
-# sample9.sk
+## sample9.sk
 Script:
 ```
 {
@@ -179,7 +181,7 @@ puts(a * (b + c) * d);
 NOT c > d
 c < d
 ```
-# sample8.sk
+## sample8.sk
 Script:
 ```
 {
