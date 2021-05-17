@@ -325,7 +325,6 @@ public class Skript {
 			else if (elseBlock != null) {
 				return elseBlock.eval(global, ctx);
 			}
-//			else throw new RuntimeException("if without then or else");
 			return new IntegerValue(0);
 		}
 	}
@@ -525,7 +524,7 @@ public class Skript {
 				if (!")".equals(t.next())) throw new RuntimeException(") expected");
 			}
 			else if (token.startsWith("'")) {
-				factor.stringLiteral = StringLiteral.parse(token); //FIXME (Tokenizer) string with spaces and "'" escaping
+				factor.stringLiteral = StringLiteral.parse(token); 
 			}
 			else {
 				String token2 = t.next();
@@ -850,14 +849,12 @@ public class Skript {
 		putIfNotExisting(ctx, "puts", new FunctionValue(Arrays.asList("s"), new IEvalInContext() {
 			public Value evalInContext(Context global, Context ctx) {
 				String s = ctx.get("s").toString();
-				//System.out.println(s);
 				PrintStream out = (PrintStream)((InternalValue) ctx.get("out")).value;
 				out.println(s);
 				return new IntegerValue(0);
 			}
 		}));
 		putIfNotExisting(ctx, "gets", new FunctionValue(new LinkedList<>(), new IEvalInContext() {
-			//BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 			public Value evalInContext(Context global, Context ctx) {
 				try {
 					BufferedReader in = (BufferedReader)((InternalValue) ctx.get("in")).value;
@@ -875,12 +872,6 @@ public class Skript {
 			}
 		}));
 		
-//		ctx.put("null", new FunctionValue(Arrays.asList("v"), new IEvalInContext() {
-//			public Value evalInContext(Context global, Context ctx) {
-//				StringValue sv = (StringValue) ctx.get("v");
-//				return new IntegerValue(sv.value == null ? 1 : 0);
-//			}
-//		}));
 		putIfNotExisting(ctx, "null", new StringValue(null));
 		
 		putIfNotExisting(ctx, "in", new InternalValue(new BufferedReader(new InputStreamReader(System.in))));
