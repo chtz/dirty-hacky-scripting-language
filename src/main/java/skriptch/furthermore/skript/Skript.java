@@ -844,13 +844,13 @@ public class Skript {
 			}
 		}));
 		
-		ctx.put("notnull", new FunctionValue(Arrays.asList("v"), new IEvalInContext() {
+		ctx.put("not", new FunctionValue(Arrays.asList("v"), new IEvalInContext() {
 			public Value evalInContext(Context global, Context ctx) {
-				StringValue sv = (StringValue) ctx.get("v");
-				return new IntegerValue(sv.value == null ? 0 : 1);
+				IntegerValue iv = (IntegerValue) ctx.get("v");
+				return new IntegerValue(iv.value == 1 ? 0 : 1);
 			}
 		}));
-		ctx.put("isnull", new FunctionValue(Arrays.asList("v"), new IEvalInContext() {
+		ctx.put("null", new FunctionValue(Arrays.asList("v"), new IEvalInContext() {
 			public Value evalInContext(Context global, Context ctx) {
 				StringValue sv = (StringValue) ctx.get("v");
 				return new IntegerValue(sv.value == null ? 1 : 0);
