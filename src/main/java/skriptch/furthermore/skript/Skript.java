@@ -1,6 +1,4 @@
-package skript;
-
-import static org.junit.Assert.assertEquals;
+package skriptch.furthermore.skript;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -10,9 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
-import org.junit.Test;
-
-public class Test1 {
+public class Skript {
 	static class Context { 
 		public Context parent;
 		public Map<String, Value> vars = new HashMap<String, Value>();
@@ -558,7 +554,6 @@ public class Test1 {
 					t.pushback(token);
 				}
 				
-				System.err.println("Expression start: " + token);
 				fc.params.add(Expression.parse(t));
 				
 				token = t.next();
@@ -751,6 +746,10 @@ public class Test1 {
 	
 	public static Value eval(String s) {
 		Context ctx = new Context();
+		return eval(s, ctx);
+	}
+	
+	public static Value eval(String s, Context ctx) {
 		ctx.put("map", new FunctionValue(new LinkedList<String>(), new IEvalInContext() {
 			public Value evalInContext(Context global, Context ctx) {
 				return new InternalValue(new HashMap<String,Value>());
@@ -774,55 +773,5 @@ public class Test1 {
 		}));
 		
 		return Block.parse(new Tokenizer(s)).eval(new Context(), ctx);
-	}
-	
-	////
-	
-	@Test
-	public void test() {
-		assertEquals("1123", eval("{ x := map ( ) ; y := map ( ) ; put ( y , 'foo' , 1000 ) ; put ( x , 'foo' , 100 ) ; put ( x , 'bar' , 23 ) ; result := get ( y , 'foo' ) + get ( x , 'foo' ) + get ( x , 'bar' ) }").toString());
-	}
-	
-	@Test
-	public void test3() {
-		Context global = new Context();
-		Context ctx = new Context();
-		ctx.put("foo", new FunctionValue(Arrays.asList("a","b"), new IEvalInContext() {
-			public Value evalInContext(Context global, Context ctx) {
-				return new IntegerValue(((IntegerValue)ctx.get("a")).value + ((IntegerValue)ctx.get("b")).value);
-			}
-		}));
-		assertEquals("6", testEval("{ X := foo ( 1 , 2 ) + 3 }", global, ctx).get("X").toString());
-	}
-		
-	@Test
-	public void test2() {
-		assertEquals("9", testEval("{ def add ( a ,  b ) { result := a + b } ; x := 1 ; D := add ( x , 2 + 3 ) + add ( 1 , 2 ) }").get("D").toString());
-		assertEquals("117", testEval("{ def hello { C := C + 3 ; result := 10 } ; C := 100 ; hello ( ) ; D := 1 + hello ( ) ; D := D + C }").get("D").toString());
-		
-		assertEquals("ab", testEval("{ C := 'a' + 'b' }").get("C").toString());
-		
-		assertEquals("5", testEval("{ C := x ; for i := 0 ; i < 3 ; i := i + 1 { C := C + 1 } }", "x", 2).get("C").toString());
-		
-		assertEquals("-6", testEval("{ if x > 1 then { C := 2 * x } else { b := 3 * x ; C := b } }", "x", -2).get("C").toString());
-		assertEquals("4",  testEval("{ if x > 1 then { C := 2 * x } else { b := 3 * x ; C := b } }", "x",  2).get("C").toString());
-	}
-	
-	private Context testEval(String s) {
-		return testEval(s, "foo", 0);
-	}
-	
-	private Context testEval(String s, String name, int value) {
-		Context global = new Context();
-		Context ctx = new Context();
-		ctx.put(name, new IntegerValue(value));
-		return testEval(s, global, ctx);
-	}
-	
-	private Context testEval(String s, Context global, Context ctx) {
-		System.out.println("Eval: " + s);
-		System.out.println("Result: " + Block.parse(new Tokenizer(s)).eval(global, ctx));
-		System.out.println("Globals: " + global.vars);
-		return global;
 	}
 }
